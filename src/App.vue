@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import Modal from './components/Modal.vue';
 import { listObjects, addImage } from './services/s3';
 
-const currentPath = ref('');
+const currentPath = ref([]);
 const selectedImage = ref(null);
 const dirs = ref([]);
 const images = ref([]);
@@ -16,6 +16,16 @@ const filteredImages = computed(() => {
 	}
 	return images.value;
 });
+const currentPathString = computed(() => {
+  return currentPath.value.join("/") || "";
+});
+const previousDir = computed(() => {
+  if (!currentPathString.value) {
+    return "";
+  }
+  const path = currentPathString.value.substring(0, currentPathString.value.length - 1)
+  return path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "root";
+});
 
 function onFilter (event) {
 	filterText.value = event.target.value;
@@ -23,7 +33,7 @@ function onFilter (event) {
 
 async function onAddImage(event) {
   try {
-    await addImage(currentPath.value, event.target.files);
+    await addImage(currentPathString.value, event.target.files);
     getFolder();
   } catch (error) {
     alert(`error adding image: ${error}`);
@@ -43,15 +53,16 @@ function onDeleteImage() {
   getFolder();
 }
 
+
 async function getFolder(dirName) {
   try {
     if (dirName) {
-      currentPath.value = dirName;
+      currentPath.value = dirName === "root" ? [""] : dirName.split("/");
     }
 
     loading.value = true;
 
-    const response = await listObjects(currentPath.value);
+    const response = await listObjects(currentPathString.value);
 
     images.value = response?.Contents?.filter((item) =>
       item.Key.match(/jpeg|jpg|webp|png/g)
@@ -73,6 +84,8 @@ async function getFolder(dirName) {
         const prefix = commonPrefix.Prefix;
         return decodeURIComponent(prefix);
       });
+    } else {
+      dirs.value = [];
     }
   } catch (err) {
     return alert('There was an error viewing your directory: ' + err.message);
@@ -87,8 +100,18 @@ getFolder();
 
 <template>
   <div>
-    <h1>Directories</h1>
+    <div class="heading">
+      <h1>
+        Directories
+      </h1>
+      <span>PATH: </span>
+      <code>{{ currentPathString }}</code>
+    </div>
+    
     <div class="dir-list">
+      <button v-if="previousDir" @click="getFolder(previousDir)">
+        Back to {{ previousDir }}
+      </button>
       <button v-for="(dir, index) in dirs" :key="index" @click="getFolder(dir)">
         {{ dir }}
       </button>
@@ -128,6 +151,13 @@ getFolder();
 </template>
 
 <style scoped lang="scss">
+.heading {
+  margin-bottom: 2rem;
+  h1 {
+    margin: 0
+  }
+}
+
 ul,
 li {
   list-style: none;
