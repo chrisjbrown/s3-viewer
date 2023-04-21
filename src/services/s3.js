@@ -25,15 +25,17 @@ export async function addImage(dirPath, files) {
     if (!files.length) {
         return alert("Choose a file to upload first.");
     }
-    const file = files[0];
-    const fileName = file.name;
-    const imageKey = dirPath + fileName;
-    const uploadParams = {
-        Bucket: import.meta.env.VITE_S3_BUCKET,
-        Key: imageKey,
-        Body: file
-    };
-    return await s3.send(new PutObjectCommand(uploadParams));
+    files.forEach( async (file) => {
+        const fileName = file.name;
+        const imageKey = dirPath + fileName;
+        const uploadParams = {
+            Bucket: import.meta.env.VITE_S3_BUCKET,
+            Key: imageKey,
+            Body: file
+        };
+        await s3.send(new PutObjectCommand(uploadParams));
+    });
+    return;
 }
 
 export async function deleteImage(imageSrc) {

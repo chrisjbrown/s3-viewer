@@ -33,7 +33,8 @@ function onFilter (event) {
 
 async function onAddImage(event) {
   try {
-    await addImage(currentPathString.value, event.target.files);
+
+    await addImage(currentPathString.value, Array.from(event.target.files));
     getFolder();
   } catch (error) {
     alert(`error adding image: ${error}`);
@@ -138,6 +139,7 @@ getFolder();
       name="imageupload"
       class="upload"
       accept="image/png, image/jpeg, image/webp, image/jpg"
+      multiple
       @change="onAddImage"
     />
     <Modal
@@ -169,8 +171,9 @@ li {
 
 .dir-list {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
   justify-content: center;
+  flex-wrap: wrap;
 }
 .filter-input {
 	margin-top: 20px;
